@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.js"></script>
+  <meta charset="UTF-8">
+  <title>AES加密</title>
+</head>
+<body>
+<div style="margin: 0 100px;">
+  <label for="source">
+    <textarea id="source" style="width: 100%; height: 100px;"></textarea>
+  </label>
+</div>
+<hr/>
+<div style="margin: 0 100px;">
+  <button onclick="test_decryption()">test encryption</button>
+</div>
+<hr/>
+<div style="margin: 0 100px;">
+  <label for="result">
+    <textarea id="result" style="width: 100%; height: 100px;"></textarea>
+  </label>
+</div>
+</body>
+<script>
+  var AES_256_CBC = 'AES-256-CBC';
+  var secret_key  = "e8b7b40e031300000000da247441226a";
+  var data        = 'YTExMWJmZTI5Njk3ZmQxZTBEeFBJSXNiSGdtdWNQZFhhS1JxdEtENFMxS1QxcDVHOHVwVGcyUDRwa0FhaDZnUGcyQWN2VFNWQ1FZWWtLMTNhMGdVL3pZZWxLNjhnWDV3WlJod1JMU09pcDNmUFlVZ2tRamtRVTlFOFl6YkpqTFJKVTh5OFJ5V25OOGU3RVBYajRCMCtsMUI2RnoxOGRBRmlab0IydUs3RndPemdHajFEZ1hFTmowaHlwcldYcXJ5V3BrNC96c1piMnFaUCtJTzlUTGJ6MGFlaHRnN1djQ2h5VGVBRHQ4YmlOSHRyL0ExYkRidkNvQU9tK0FxR2ZWYUVVbFV4MlF1RFNia0lVWUlXT2x2OTdub0V0aTFYcTIzVmg3Q3NVeFl3WHhnbTAyQ0NmUUVSQjlUbDlNPQ%3D%3D';
+
+  function get_iv_length(cipher_algorithm) {
+    var iv_length;
+    switch (cipher_algorithm) {
+      case AES_256_CBC:
+        iv_length = 16;
+        break;
+      default:
+        throw new Error('unknown cipher algorithm');
+    }
+    return iv_length;
+  }
+
+  function aes_decrypt(source, secret_key, cipher_algorithm) {
+    /**
+     *  1. execute urldecode to restore special character and parse it via base64, then stringify it via utf8
+     *    e.g.
+     *    %2B => +
+     *    %2F => /
+     *    %3D => =
+     *  2. obtain iv length and use it to slice message, then get cipher iv
+     *  3. obtain iv length and use it to slice message, then get cipher text
+     */
+    source = CryptoJS.enc.Utf8.stringify(CryptoJS.enc.Base64.parse(decodeURIComponent(source)));
+    var iv_length   = get_iv_length(cipher_algorithm);
+    var iv          = source.substring(0, iv_length);
+    var cipher_text = source.substring(iv_length);
+
+    /**
+     *  1. parse cipher key via utf8
+     *  2. parse cipher iv via utf8
+     *  3. execute AES decryption
+     */
+    var cipher_key = CryptoJS.enc.Utf8.parse(secret_key);
+    var cipher_iv  = CryptoJS.enc.Utf8.parse(iv);
+    var decrypted  = CryptoJS.AES.decrypt(cipher_text, cipher_key, {iv: cipher_iv});
+
+    /**
+     *  1. stringify result via utf8
+     */
+    return CryptoJS.enc.Utf8.stringify(decrypted);
+  }
+
+  function test_decryption() {
+    var source = document.getElementById("source");
+    var result = document.getElementById("result");
+    console.log(source);
+    console.log(result);
+
+    var cipher_text = source.value.trim() || data;
+    var plain__text = aes_decrypt(cipher_text, secret_key, AES_256_CBC);
+    console.log(cipher_text)
+    console.log(plain__text)
+
+    source.value = cipher_text;
+    result.value = plain__text;
+  }
+
+  window.addEventListener("load", function(_) {
+    test_decryption()
+  })
+</script>
+</html>
