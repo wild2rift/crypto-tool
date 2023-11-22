@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.js"></script>
+  <meta charset="UTF-8">
+  <title>AES加密</title>
+</head>
+<body>
+<div style="margin: 0 100px;">
+  <label for="source">
+    <textarea id="source" style="width: 100%; height: 100px;"></textarea>
+  </label>
+</div>
+<hr/>
+<div style="margin: 0 100px;">
+  <button onclick="test_encryption()">test encryption</button>
+</div>
+<hr/>
+<div style="margin: 0 100px;">
+  <label for="result">
+    <textarea id="result" style="width: 100%; height: 100px;"></textarea>
+  </label>
+</div>
+</body>
+<script>
+  var AES_256_CBC = 'AES-256-CBC';
+  var secret_key  = "e8b7b40e031300000000da247441226a";
+  var data        = {
+    provider: "ALIPAY",
+    transaction_id: "ALIPAY_HK71533387bf246231637d597c611a889q",
+    subscription_id: "UBNpi1iis0de9DZtJp+Aq1FJNlRYOGRHbnprWkZlMjFFRm1FRGc9PQ==",
+    user_id: "500000402",
+    area_id: "1",
+    lang_id: "1"
+  };
+
+  function get_iv_length(cipher_algorithm) {
+    var iv_length;
+    switch (cipher_algorithm) {
+      case AES_256_CBC:
+        iv_length = 16;
+        break;
+      default:
+        throw new Error('unknown cipher algorithm');
+    }
+    return iv_length;
+  }
+
+  function aes_encrypt(source, secret_key, cipher_algorithm) {
+    /**
+     *  1. parse cipher key via utf8
+     *  2. generate random cipher iv of specified length and convert it to hexadecimal, then parse it via utf8
+     *  3. execute AES encryption
+     */
+    var cipher_key = CryptoJS.enc.Utf8.parse(secret_key);
+    var cipher_iv  = CryptoJS.enc.Utf8.parse(CryptoJS.lib.WordArray.random(get_iv_length(cipher_algorithm) / 2).toString(CryptoJS.enc.Hex));
+    var encrypted  = CryptoJS.AES.encrypt(source, cipher_key, {iv: cipher_iv});
+
+    /**
+     *  1. stringify cipher iv via utf8
+     *  2. stringify cipher text via base64
+     *  3. concat cipher iv and cipher text and parse it via utf8, then stringify result via base64
+     */
+    var first__text = CryptoJS.enc.Utf8.stringify(encrypted.iv);
+    var second_text = CryptoJS.enc.Base64.stringify(encrypted.ciphertext);
+    var cipher_text = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(first__text + second_text));
+
+    /**
+     *  1. execute urlencoded to escape special character
+     *    e.g.
+     *    + => %2B
+     *    / => %2F
+     *    = => %3D
+     */
+    return encodeURIComponent(cipher_text);
+  }
+
+  function test_encryption() {
+    var source = document.getElementById("source");
+    var result = document.getElementById("result");
+    console.log(source);
+    console.log(result);
+
+    var plain__text = source.value.trim() || JSON.stringify(data);
+    var cipher_text = aes_encrypt(plain__text, secret_key, AES_256_CBC);
+    console.log(plain__text)
+    console.log(cipher_text)
+
+    source.value = plain__text;
+    result.value = cipher_text;
+  }
+
+  window.addEventListener("load", function(_) {
+    test_encryption()
+  })
+</script>
+</html>
